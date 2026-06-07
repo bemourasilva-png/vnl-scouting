@@ -256,6 +256,69 @@ with tab2:
             )
             st.plotly_chart(fig, use_container_width=True)
 
+        # --- Atleta mais semelhante ---
+        st.divider()
+        st.markdown("#### 🔎 Atleta Real Mais Semelhante")
+
+        entrada_arr = np.array(valores)
+        df_cluster = df[df["cluster"] == cluster_pred].copy()
+        df_cluster["distancia"] = df_cluster[features].apply(
+            lambda row: np.sqrt(np.sum((row.values - entrada_arr) ** 2)), axis=1
+        )
+        top3 = df_cluster.nsmallest(3, "distancia")
+
+        col_s1, col_s2 = st.columns([1, 2])
+
+        with col_s1:
+            st.markdown("**Top 3 atletas mais próximas:**")
+            for i, (_, row) in enumerate(top3.iterrows()):
+                medalha = ["🥇", "🥈", "🥉"][i]
+                st.markdown(
+                    f"<div style='background-color:#1e1e2e;padding:10px;border-radius:8px;"
+                    f"border-left:4px solid {cor};margin-bottom:8px'>"
+                    f"<b>{medalha} {row['nome_media']}</b><br>"
+                    f"🌍 {row['country']} &nbsp;|&nbsp; 📌 {row['posicao_pt']}<br>"
+                    f"📏 Distância: {row['distancia']:.2f}</div>",
+                    unsafe_allow_html=True
+                )
+
+        with col_s2:
+            atleta_ref = top3.iloc[0]
+            valores_ref = [atleta_ref[f] for f in features]
+            valores_ref_norm = [round((v / m) * 100, 1) for v, m in zip(valores_ref, maximos)]
+
+            fig2 = go.Figure()
+            fig2.add_trace(go.Scatterpolar(
+                r=valores_norm + [valores_norm[0]],
+                theta=features_pt + [features_pt[0]],
+                fill="toself",
+                fillcolor=cor,
+                opacity=0.35,
+                line=dict(color=cor, width=2, dash="dash"),
+                name="Atleta Hipotética"
+            ))
+            fig2.add_trace(go.Scatterpolar(
+                r=valores_ref_norm + [valores_ref_norm[0]],
+                theta=features_pt + [features_pt[0]],
+                fill="toself",
+                fillcolor="#ffffff",
+                opacity=0.15,
+                line=dict(color="#ffffff", width=2),
+                name=atleta_ref["nome_media"]
+            ))
+            fig2.update_layout(
+                polar=dict(radialaxis=dict(
+                    visible=True,
+                    range=[0, 100],
+                    tickvals=[25, 50, 75, 100],
+                    ticktext=["25%", "50%", "75%", "100%"]
+                )),
+                title=f"Hipotética vs {atleta_ref['nome_media']}",
+                height=400,
+                legend=dict(orientation="h", y=-0.15)
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+
 # ============================================================
 # TAB 3
 # ============================================================
